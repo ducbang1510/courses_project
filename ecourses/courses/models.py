@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from ckeditor.fields import RichTextField
 
 
 # Pass: Bang@123
@@ -41,7 +42,7 @@ class Lesson(ItemBase):
     class Meta:
         unique_together = ('subject', 'course')
 
-    content = models.TextField()
+    content = RichTextField()
     course = models.ForeignKey(Course, related_name='lessons', on_delete=models.CASCADE)
     tags = models.ManyToManyField('Tag', related_name='lessons', blank=True, null=True)
 
