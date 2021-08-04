@@ -1,11 +1,28 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views import View
-from rest_framework import viewsets, permissions, status
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import viewsets, permissions, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Course, Lesson, Tag
-from .serializers import CourseSerializer,LessonSerializer
+from rest_framework.parsers import MultiPartParser
+
+from .models import Course, Lesson, Tag, User
+from .serializers import CourseSerializer, LessonSerializer, UserSerializer
+
+
+class UserViewSet(viewsets.ViewSet,
+                  generics.CreateAPIView,
+                  generics.RetrieveAPIView):
+    queryset = User.objects.filter(is_active=True)
+    serializer_class = UserSerializer
+    parser_classes = [MultiPartParser, ]
+
+    def get_permissions(self):
+        if self.action == 'retrieve':
+            return [permissions.IsAuthenticated()]
+
+        return [permissions.AllowAny()]
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -24,6 +41,12 @@ class LessonViewSet(viewsets.ModelViewSet):
     queryset = Lesson.objects.filter(active=True)
     serializer_class = LessonSerializer
 
+    @swagger_auto_schema(
+        operation_description='This API for hide lesson from client',
+        response={
+            status.HTTP_200_OK: LessonSerializer()
+        }
+    )
     @action(methods=['post'], detail=True,
             url_path='hide-lesson',
             url_name='hide-lesson')
@@ -35,7 +58,7 @@ class LessonViewSet(viewsets.ModelViewSet):
         except Lesson.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(data=LessonSerializer(l).data, status=status.HTTP_200_OK)
+        return Response(data=LessonSerializer(l, context={'request': request}).data, status=status.HTTP_200_OK)
 
 
 def index(request):
