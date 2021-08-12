@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'oauth2_provider',
     'drf_yasg',
+    'corsheaders',
     'debug_toolbar',
 ]
 
@@ -62,12 +63,15 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 INTERNAL_IPS = [
     '127.0.0.1',
 ]
+
+CORS_ORIGIN_ALLOW_ALL = True
 
 ROOT_URLCONF = 'ecourses.urls'
 
@@ -136,6 +140,18 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+# if DEBUG:
+#     MIDDLEWARE += (
+#         'debug_toolbar.middleware.DebugToolbarMiddleware',
+#     )
+#     INSTALLED_APPS += (
+#         'debug_toolbar',
+#     )
+#     INTERNAL_IPS = ('127.0.0.1', )
+#     DEBUG_TOOLBAR_CONFIG = {
+#         'INTERCEPT_REDIRECTS': False,
+#     }
 
 
 # Static files (CSS, JavaScript, Images)
