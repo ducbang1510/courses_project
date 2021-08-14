@@ -7,8 +7,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 
-from .models import Course, Lesson, Tag, User
-from .serializers import CourseSerializer, LessonSerializer, UserSerializer
+from .models import *
+from .serializers import CourseSerializer, LessonSerializer, UserSerializer, CategorySerializer
 
 
 class UserViewSet(viewsets.ViewSet,
@@ -35,6 +35,11 @@ class CourseViewSet(viewsets.ModelViewSet):
             return [permissions.AllowAny()]
 
         return [permissions.IsAuthenticated()]
+
+
+class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
 
 
 class LessonViewSet(viewsets.ModelViewSet):

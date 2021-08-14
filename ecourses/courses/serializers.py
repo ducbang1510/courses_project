@@ -1,5 +1,5 @@
 from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, SerializerMethodField
-from .models import Course, Lesson, Tag, User
+from .models import Course, Lesson, Tag, User, Category
 
 
 class UserSerializer(ModelSerializer):
@@ -24,6 +24,12 @@ class CourseSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = Course
         fields = ['id', 'subject', 'image', 'created_date', 'category_id']
+
+
+class CategorySerializer(ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
 
 
 class TagSerializer(ModelSerializer):
