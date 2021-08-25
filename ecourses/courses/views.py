@@ -2,10 +2,12 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.views import View
 from drf_yasg.utils import swagger_auto_schema
+
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
+from rest_framework.pagination import PageNumberPagination
 
 from .models import *
 from .serializers import CourseSerializer, LessonSerializer, UserSerializer, CategorySerializer
@@ -13,21 +15,36 @@ from .serializers import CourseSerializer, LessonSerializer, UserSerializer, Cat
 
 class UserViewSet(viewsets.ViewSet,
                   generics.CreateAPIView,
-                  generics.RetrieveAPIView):
+                  generics.UpdateAPIView):
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     parser_classes = [MultiPartParser, ]
 
     def get_permissions(self):
-        if self.action == 'retrieve':
+        if self.action == 'current_user':
             return [permissions.IsAuthenticated()]
 
         return [permissions.AllowAny()]
+
+    @action(methods=['get'], detail=False, url_path='current-user')
+    def current_user(self, request):
+        return Response(self.serializer_class(request.user).data)
+
+    # def get_permissions(self):
+    #     if self.action == 'retrieve':
+    #         return [permissions.IsAuthenticated()]
+    #
+    #     return [permissions.AllowAny()]
+
+
+class CoursePagination(PageNumberPagination):
+    page_size = 3
 
 
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.filter(active=True)
     serializer_class = CourseSerializer
+    pagination_class = CoursePagination
     # permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
@@ -40,11 +57,17 @@ class CourseViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    pagination_class = None     # Tắt phân trang cho category
+
+
+class LessonPagination(PageNumberPagination):
+    page_size = 3
 
 
 class LessonViewSet(viewsets.ModelViewSet):
     queryset = Lesson.objects.filter(active=True)
     serializer_class = LessonSerializer
+    pagination_class = LessonPagination
 
     @swagger_auto_schema(
         operation_description='This API for hide lesson from client',
