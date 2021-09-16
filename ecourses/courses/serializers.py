@@ -5,7 +5,7 @@ from .models import Course, Lesson, Tag, User, Category
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password', 'avatar']
+        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password', 'avatar', 'date_joined']
         extra_kwargs = {
             'password': {'write_only': 'true'}
         }
@@ -21,6 +21,18 @@ class UserSerializer(ModelSerializer):
 
 
 class CourseSerializer(HyperlinkedModelSerializer):
+    image = SerializerMethodField()
+
+    def get_image(self, course):
+        request = self.context['request']
+        name = course.image.name
+        if name.startswith('static/'):
+            path = '/%s' % name
+        else:
+            path = '/static/%s' % name
+
+        return request.build_absolute_uri(path)
+
     class Meta:
         model = Course
         fields = ['id', 'subject', 'image', 'created_date', 'category_id']
@@ -47,4 +59,11 @@ class LessonSerializer(ModelSerializer):
 
     class Meta:
         model = Lesson
-        fields = ["id", "subject", "content", "created_date", "image", "tags", "tag_links"]
+        fields = ["id", "subject", "content", "created_date", "image", "tags", "tag_links", "course_id"]
+
+
+# class LessonDetailSerializer():
+#     tags = TagSerializer(many=True)
+#
+#     class Meta:
+#         model = Ls

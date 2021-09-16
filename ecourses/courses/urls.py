@@ -12,6 +12,7 @@ router.register('categories', views.CategoryViewSet, basename='category')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('oauth2-info/', views.AuthInfo.as_view())
     # path('', views.index, name="index"),
     # path('welcome/<int:year>/', views.welcome, name="welcome"),
     # path('test/', views.TestView.as_view()),

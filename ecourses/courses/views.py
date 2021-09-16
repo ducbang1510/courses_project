@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, request
 from django.views import View
 from drf_yasg.utils import swagger_auto_schema
 
@@ -8,6 +8,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework import renderers
+from django.http import Http404
+from django.conf import settings
+from rest_framework.views import APIView
 
 from .models import *
 from .serializers import CourseSerializer, LessonSerializer, UserSerializer, CategorySerializer
@@ -38,20 +43,38 @@ class UserViewSet(viewsets.ViewSet,
 
 
 class CoursePagination(PageNumberPagination):
-    page_size = 3
+    page_size = 6
 
 
-class CourseViewSet(viewsets.ModelViewSet):
-    queryset = Course.objects.filter(active=True)
+class CourseViewSet(viewsets.ViewSet, generics.ListAPIView):
+    filter_backends = (SearchFilter, OrderingFilter)
+    search_fields = ['subject']
     serializer_class = CourseSerializer
     pagination_class = CoursePagination
-    # permission_classes = [permissions.IsAuthenticated]
 
-    def get_permissions(self):
-        if self.action == 'list':
-            return [permissions.AllowAny()]
+    def get_queryset(self):
+        queryset = Course.objects.filter(active=True)
+        category_id = self.request.query_params.get('category_id')
+        q = self.request.query_params.get('q')
 
-        return [permissions.IsAuthenticated()]
+        if category_id is not None:
+            queryset = queryset.filter(category_id=category_id)
+        if q is not None:
+            queryset = queryset.filter(subject__icontains=q)
+
+        return queryset
+
+    @action(methods=['get'], detail=True, url_path="lessons")
+    def get_lessons(self, request, pk):
+        lessons = Course.objects.get(pk=pk).lessons.filter(active=True)
+        # lessons = self.get_object().lessons.filter(active=True)
+
+        kw = request.query_params.get('kw')
+        if kw is not None:
+            lessons = lessons.filter(subject__icontains=kw)
+
+        return Response(LessonSerializer(lessons, many=True).data,
+                        status=status.HTTP_200_OK)
 
 
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -64,7 +87,8 @@ class LessonPagination(PageNumberPagination):
     page_size = 3
 
 
-class LessonViewSet(viewsets.ModelViewSet):
+class LessonViewSet(viewsets.ViewSet, generics.ListAPIView,
+                    generics.RetrieveAPIView):
     queryset = Lesson.objects.filter(active=True)
     serializer_class = LessonSerializer
     pagination_class = LessonPagination
@@ -87,6 +111,31 @@ class LessonViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         return Response(data=LessonSerializer(l, context={'request': request}).data, status=status.HTTP_200_OK)
+
+    @action(methods=['post'], detail=True,
+            url_path='add-tag')
+    def add_tag(self, request, pk):
+        try:
+            lesson = Lesson.objects.get(pk=pk)
+        except Http404:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        else:
+            tags = request.data.get("tags")
+            if tags is not None:
+                for tag in tags:
+                    t, _ = Tag.objects.get_or_create(name=tag)
+                    lesson.tags.add(t)
+
+                lesson.save()
+
+                return Response(self.serializer_class(lesson).data,
+                                status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+class AuthInfo(APIView):
+    def get(self, request):
+        return Response(settings.OAUTH2_INFO, status=status.HTTP_200_OK)
 
 
 def index(request):
