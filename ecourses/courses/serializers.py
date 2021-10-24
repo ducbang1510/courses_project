@@ -1,11 +1,32 @@
-from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, SerializerMethodField
-from .models import Course, Lesson, Tag, User, Category
+from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, SerializerMethodField, Serializer, \
+    CharField
+from .models import Course, Lesson, Tag, User, Category, Comment
+
+
+class CustomTokenSerializer(Serializer):
+    token = CharField()
 
 
 class UserSerializer(ModelSerializer):
+    avatar_url = SerializerMethodField()
+
+    def get_avatar_url(self, user):
+        request = self.context.get('request')
+        if user.avatar and hasattr(user.avatar, 'name'):
+            avatar_url = user.avatar.name
+            if avatar_url.startswith('static/'):
+                avatar_url = '/%s' % avatar_url
+            else:
+                avatar_url = '/static/%s' % avatar_url
+
+            return request.build_absolute_uri(avatar_url)
+        else:
+            return None
+
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password', 'avatar', 'date_joined']
+        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password',
+                  'date_joined', 'avatar_url']
         extra_kwargs = {
             'password': {'write_only': 'true'}
         }
@@ -67,3 +88,8 @@ class LessonSerializer(ModelSerializer):
 #
 #     class Meta:
 #         model = Ls
+
+class CommentSerializer(ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = '__all__'

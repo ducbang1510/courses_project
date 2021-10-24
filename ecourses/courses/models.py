@@ -6,6 +6,7 @@ from ckeditor.fields import RichTextField
 # Pass: Bang@123
 class User(AbstractUser):
     avatar = models.ImageField(upload_to='uploads/%Y/%m')
+    email = models.EmailField(unique=True, blank=True)
 
 
 class Category(models.Model):
@@ -52,3 +53,35 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Comment(models.Model):
+    content = models.TextField()
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+
+
+class ActionBase(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class Action(ActionBase):
+    LIKE, HAHA, HEART = range(3)
+    ACTIONS = [
+        (LIKE, 'like'),
+        (HAHA, 'haha'),
+        (HEART, 'heart')
+    ]
+    type = models.PositiveSmallIntegerField(choices=ACTIONS, default=LIKE)
+
+
+class Rating(ActionBase):
+    raitng = models.PositiveSmallIntegerField(default=0)
